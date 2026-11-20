@@ -30,7 +30,6 @@
   .kr { flex:1; color:var(--sub); font-size:13px; word-break:keep-all; }
   .comp { margin-left:auto; text-align:right; color:#c9b8ff; font-size:13px; max-width:45%; word-break:keep-all; }
   @media (max-width:540px){ .comp{width:100%;text-align:left;margin-left:0;max-width:none} }
-  .tab.sort.on { background:var(--acc2); border-color:var(--acc2); }
   .badge { font-size:11px; padding:2px 8px; border-radius:6px; background:#2a3150; color:var(--sub); white-space:nowrap; }
   .empty { text-align:center; color:var(--sub); padding:40px 0; }
   mark { background:#ffd166; color:#111; border-radius:3px; }
@@ -51,7 +50,6 @@
     <button class="tab on" data-cat="ALL">전체</button>
     <button class="tab" data-cat="J">J-POP</button>
     <button class="tab" data-cat="V">보컬로이드</button>
-    <button class="tab sort" id="sortBtn">🔢 번호순 정렬</button>
   </div>
   <div class="count" id="count"></div>
   <div id="list"></div>
@@ -60,6 +58,24 @@
 <script>
 // [노래방번호, 원제목, 한글 독음, 분류(J=J-POP, V=보컬로이드, A=애니음악), 가수(J-POP만, 모르면 빈칸)]
 const SONGS = [
+["27790","ヒャダインのカカカタ☆カタオモイ-C","햐다인의 짜짜짝☆짝사랑-C","J","햐다인의 카카카타 카타오모이"],
+["52560","帝国少女","제국소녀","V","테이코쿠 쇼조"],
+["28070","Help Me, ERINNNNNN!!","헬프 미 에링","V","ビートまりお 비트 마리오 헬프미에이린"],
+["68337","虹","무지개","J","菅田将暉 스다 마사키 니지"],
+["90218","愛して愛して愛して","아이시테 아이시테 아이시테","V","사랑해 사랑해 사랑해"],
+["90224","ないものねだり","생떼 부리기","J","KANA-BOON 카나분 나이모노네다리"],
+["25246","残酷な天使のテーゼ","잔혹한 천사의 태제","J",""],
+["26235","God knows...","갓 노즈","J",""],
+["27737","シュガーソングとビターステップ","슈가 송과 비터 스텝","J",""],
+["27941","ゴーゴー幽霊船","고고 유령선","J",""],
+["28986","ドラえもんのうた","도라에몽의 노래","J",""],
+["52421","よふかしのうた","철야의 노래","J",""],
+["52959","IRIS OUT","아이리스 아웃","J",""],
+["6162","おどるポンポコリン","춤춰요 폼포코링","J",""],
+["68350","廻廻奇譚","회회기담","J",""],
+["68672","ビンクスの酒","빙크스의 술","J",""],
+["68677","KICK BACK","킥 백","J",""],
+["68697","ギターと孤独と蒼い惑星","기타와 고독과 푸른 행성","J",""],
 ["68497","シカ色デイズ","사슴색 데이즈","J",""],
 ["27589","白金ディスコ","백금 디스코","J",""],
 ["28423","ふ・れ・ん・ど・し・た・い","후렌도 시타이","J",""],
@@ -227,6 +243,12 @@ const SONGS = [
 
 
 const COMPOSER = {
+"90218": "きくお",
+"27790": "前山田健一",
+"52560": "R Sound Design",
+"28070": "ZUN",
+"68337": "石崎ひゅーい",
+"90224": "谷口鮪",
 "68497": "和賀裕希",
 "27589": "神前暁",
 "28423": "藤本貴則",
@@ -235,7 +257,7 @@ const COMPOSER = {
 "52879": "田中マイミ",
 "52423": "片岡健太 [Saucy Dog]",
 "28269": "ハチ",
-"52972": "高橋優",
+"52972": "米津玄師",
 "68478": "米津玄師",
 "52737": "米津玄師",
 "52481": "米津玄師",
@@ -325,7 +347,7 @@ const COMPOSER = {
 "68104": "藤原聡 [Official髭男dism]",
 "68766": "藤原聡 [Official髭男dism]",
 "68838": "藤原聡 [Official髭男dism]",
-"68940": "雫 [ポルカドットスティングレイ]",
+"68940": "緑黄色社会",
 "68562": "peppe, 穴見真吾 [緑黄色社会]",
 "52912": "長屋晴子, 穴見真吾 [緑黄色社会]",
 "52806": "長屋晴子 [緑黄色社会]",
@@ -362,7 +384,7 @@ const COMPOSER = {
 "68723": "後藤正文",
 "68706": "音羽-otoha-",
 "52498": "椎名もた",
-"52468": "椎名もた",
+"52468": "DECO*27",
 "28747": "DECO*27",
 "28676": "DECO*27",
 "68034": "DECO*27",
@@ -397,14 +419,13 @@ const COMPOSER = {
 "68584": "ナユタン星人",
 "68884": "和ぬか [ナナヲアカリ]",
 "27788": "wowaka",
-"52691": "かめりあ",
+"52691": "TRAP CHICK",
 "52516": "P丸様。, POLKADOT STINGRAY",
 "52700": "岡谷柚奈",
 "52897": "柊マグネタイト"
 };
 const CATS = { J:"J-POP", V:"보컬로이드" };
 let cat = "ALL";
-let sortNum = false;
 const q = document.getElementById("q");
 const list = document.getElementById("list");
 const countEl = document.getElementById("count");
@@ -426,30 +447,22 @@ function render() {
   if (term) {
     items = items.filter(s => norm(s[0]).includes(term) || norm(s[1]).includes(term) || norm(s[2]).includes(term) || norm(s[4]).includes(term));
   }
-  const byNum = (a,b) => Number(a[0]) - Number(b[0]);
   countEl.textContent = `총 ${items.length}곡`;
   if (!items.length) { list.innerHTML = `<div class="empty">검색 결과가 없습니다.</div>`; return; }
 
-  // 묶기 기준: J-POP 탭은 가수별, 나머지는 분류별. 정렬(번호순)은 묶음 안에서 항상 함께 적용됨.
   const order = cat === "ALL" ? ["J","V"] : [cat];
   const groups = order.map(g => ({ title: CATS[g], arr: items.filter(s => s[3] === g) })).filter(g => g.arr.length);
   list.innerHTML = groups.map(g => {
-    const arr = sortNum ? [...g.arr].sort(byNum) : g.arr;
+    const arr = g.arr;
     return `<details class="group" open><summary>${esc(g.title)} <span class="badge">${arr.length}곡</span></summary>${arr.map(s=>row(s,raw)).join("")}</details>`;
   }).join("");
 }
 
-document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
-  document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
+document.querySelectorAll(".tab[data-cat]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab[data-cat]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); cat = b.dataset.cat; render();
 }));
 q.addEventListener("input", render);
-document.getElementById("sortBtn").addEventListener("click", e => {
-  sortNum = !sortNum;
-  e.currentTarget.classList.toggle("on", sortNum);
-  e.currentTarget.textContent = sortNum ? "🔢 번호순 정렬 ON" : "🔢 번호순 정렬";
-  render();
-});
 render();
 </script>
 </body>
